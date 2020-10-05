@@ -16,11 +16,17 @@ namespace Avalon.Server.Model
             this.host = host;
         }
 
-        internal void addPlayer(Player player)
+        public void addPlayer(string connectionId, string username)
         {
-            if (players.Contains(player))
+            if (players.Find(player => player.connectionId.Equals(connectionId)) != null)
             {
-                // No work, player is already in game.
+                // Connection is already in game.
+                return;
+            }
+
+            if (players.Find(player => player.name.Equals(username)) != null)
+            {
+                // Name already in use.
                 return;
             }
 
@@ -30,10 +36,10 @@ namespace Avalon.Server.Model
                 return;
             }
 
-            this.players.Add(player);
+            this.players.Add(new Player(connectionId, username));
         }
 
-        internal void removePlayer(string connectionId)
+        public void removePlayer(string connectionId)
         {
             if (host.connectionId.Equals(connectionId))
             {
@@ -41,6 +47,11 @@ namespace Avalon.Server.Model
             }
 
             this.players.RemoveAll(player => player.connectionId.Equals(connectionId));
+        }
+
+        public bool containsConnection(string connectionId)
+        {
+            return this.players.Find(player => player.connectionId.Equals(connectionId)) != null;
         }
     }
 }
