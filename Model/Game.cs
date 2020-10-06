@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Avalon.Server.Model
@@ -9,15 +10,22 @@ namespace Avalon.Server.Model
         public string gameId { get; }
         public Player host { get { return players[0]; } set { players[0] = value; } }
         public List<Player> players { get; }
+        public GamePhase gamePhase { get; }
 
         public Game(Player host)
         {
             this.gameId = "TEST";
             this.host = host;
+            this.gamePhase = GamePhase.Lobby;
         }
 
-        public void addPlayer(string connectionId, string username)
+        public void AddPlayer(string connectionId, string username)
         {
+            if (!gamePhase.Equals(GamePhase.Lobby))
+            {
+                // Not in lobby.
+            }
+
             if (players.Find(player => player.connectionId.Equals(connectionId)) != null)
             {
                 // Connection is already in game.
@@ -39,8 +47,13 @@ namespace Avalon.Server.Model
             this.players.Add(new Player(connectionId, username));
         }
 
-        public void removePlayer(string connectionId)
+        public void RemovePlayer(string connectionId)
         {
+            if (!gamePhase.Equals(GamePhase.Lobby))
+            {
+                // Not in lobby.
+            }
+
             if (host.connectionId.Equals(connectionId))
             {
                 // Host is leaving!
@@ -49,7 +62,17 @@ namespace Avalon.Server.Model
             this.players.RemoveAll(player => player.connectionId.Equals(connectionId));
         }
 
-        public bool containsConnection(string connectionId)
+        public void Start()
+        {
+            if (!gamePhase.Equals(GamePhase.Lobby))
+            {
+                // Not in lobby.
+            }
+
+            throw new NotImplementedException();
+        }
+
+        public bool ContainsConnection(string connectionId)
         {
             return this.players.Find(player => player.connectionId.Equals(connectionId)) != null;
         }

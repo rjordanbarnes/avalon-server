@@ -46,9 +46,9 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
-            game.addPlayer(Context.ConnectionId, username);
+            game.AddPlayer(Context.ConnectionId, username);
 
-            if (game.containsConnection(Context.ConnectionId))
+            if (game.ContainsConnection(Context.ConnectionId))
             {
                 // Successfully added the player.
                 await Groups.AddToGroupAsync(Context.ConnectionId, game.gameId);
@@ -65,13 +65,32 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
-            game.removePlayer(Context.ConnectionId);
+            game.RemovePlayer(Context.ConnectionId);
 
-            if (!game.containsConnection(Context.ConnectionId))
+            if (!game.ContainsConnection(Context.ConnectionId))
             {
                 // Successfully removed the player.
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             }
+        }
+
+        public async Task StartGame(string gameId)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.host.connectionId.Equals(Context.ConnectionId))
+            {
+                // Not the host
+                return;
+            }
+
+            game.Start();
         }
     }
 }
