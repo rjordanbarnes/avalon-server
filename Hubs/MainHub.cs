@@ -28,6 +28,7 @@ namespace Avalon.Server.Hubs
             await Clients.All.SendAsync("ReceiveMessage", user, message);
         }
 
+        // Creates a new game. The host will have the passed username.
         public async Task CreateGame(string username)
         {
             Player host = new Player(Context.ConnectionId, username);
@@ -36,6 +37,7 @@ namespace Avalon.Server.Hubs
             await Groups.AddToGroupAsync(host.connectionId, game.gameId);
         }
 
+        // Joins a game. The user will have the passed username.
         public async Task JoinGame(string gameId, string username)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
@@ -48,13 +50,14 @@ namespace Avalon.Server.Hubs
 
             game.AddPlayer(Context.ConnectionId, username);
 
-            if (game.ContainsConnection(Context.ConnectionId))
+            if (game.ContainsPlayer(Context.ConnectionId))
             {
                 // Successfully added the player.
                 await Groups.AddToGroupAsync(Context.ConnectionId, game.gameId);
             }
         }
 
+        // Leaves a game.
         public async Task LeaveGame(string gameId)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
@@ -67,13 +70,14 @@ namespace Avalon.Server.Hubs
 
             game.RemovePlayer(Context.ConnectionId);
 
-            if (!game.ContainsConnection(Context.ConnectionId))
+            if (!game.ContainsPlayer(Context.ConnectionId))
             {
                 // Successfully removed the player.
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, gameId);
             }
         }
 
+        // Starts a game. Player must be host.
         public async Task StartGame(string gameId)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
@@ -91,6 +95,46 @@ namespace Avalon.Server.Hubs
             }
 
             game.Start();
+        }
+
+        // Toggles whether the passed Player is in the party. Player must be leader.
+        public async Task ToggleParty(string gameId, string username)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.leader.connectionId.Equals(Context.ConnectionId))
+            {
+                // Not the leader
+                return;
+            }
+
+            game.ToggleParty(username);
+        }
+
+        // Confirms the current party. Player must be leader.
+        public async Task ConfirmParty(string gameId)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.leader.connectionId.Equals(Context.ConnectionId))
+            {
+                // Not the leader
+                return;
+            }
+
+            game.ConfirmParty();
         }
     }
 }

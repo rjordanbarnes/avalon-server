@@ -10,12 +10,18 @@ namespace Avalon.Server.Model
         private static readonly int MAX_PLAYERS = 10;
         private Random random = new Random();
 
-        public string gameId { get; }
-        public Player host { get; private set; }
-        public Player leader { get; private set; }
-        public List<Player> players { get; }
-        public List<Team> questResults { get; }
-        public GamePhase gamePhase { get; private set; }
+        public string gameId { get; }                       // Identifier for this game
+
+        // Player trackers.
+        public List<Player> players { get; }                // Contains all players, including the host
+        public Player host { get; private set; }            // Current host. Must be contained in players
+        public Player leader { get; private set; }          // Current leader. Must be contained in players
+        public List<Player> questParty { get; }             // Players in the current quest party.
+
+        // Round trackers.
+        public List<Team> questResults { get; }             // Which team has won each quest
+        public int gameRound { get; private set; }          // Current quest
+        public GamePhase gamePhase { get; private set; }    // Current game phase
 
         public Game(Player host)
         {
@@ -64,7 +70,7 @@ namespace Avalon.Server.Model
 
             if (host.connectionId.Equals(connectionId))
             {
-                // Host is leaving!
+                // TODO: Host is leaving!
             }
 
             this.players.RemoveAll(player => player.connectionId.Equals(connectionId));
@@ -109,12 +115,71 @@ namespace Avalon.Server.Model
             // Assign random leader
             this.leader = this.players[random.Next(players.Count)];
 
+            this.gameRound = 1;
             this.gamePhase = GamePhase.PartySelection;
         }
 
-        public bool ContainsConnection(string connectionId)
+        public void ToggleParty(string username)
+        {
+            Player player = players.Find(player => player.name.Equals(username));
+
+            if (player == null)
+            {
+                // Not a player.
+                return;
+            }
+
+            if (!gamePhase.Equals(GamePhase.PartySelection))
+            {
+                // Not in party selection phase.
+                return;
+            }
+
+            if (this.questParty.Contains(player))
+            {
+                this.questParty.Remove(player);
+            }
+            else if (this.questParty.Count < GetPartyCount(this.gameRound, this.players.Count))
+            {
+                this.questParty.Add(player);
+            }
+        }
+
+        public void ConfirmParty()
+        {
+            if (!gamePhase.Equals(GamePhase.PartySelection))
+            {
+                // Not in party selection phase.
+                return;
+            }
+
+            if (this.questParty.Count != GetPartyCount(this.gameRound, this.players.Count))
+            {
+                // Don't have the required number of party members.
+                return;
+            }
+
+            this.gamePhase = GamePhase.PartyVote;
+        }
+
+        public bool ContainsPlayer(string connectionId)
         {
             return this.players.Find(player => player.connectionId.Equals(connectionId)) != null;
+        }
+
+        public static int GetPartyCount(int questNumber, int playerCount)
+        {
+            // Indexed by [Quest# - 1][PlayerCount - MIN_PLAYERS]
+            // Table taken from Team Building Phase section of Avalon rulebook
+            int[,] partyCountTable = new int[,] {
+                {2, 2, 2, 3, 3, 3},
+                {3, 3, 3, 4, 4, 4},
+                {2, 4, 3, 4, 4, 4},
+                {3, 3, 4, 5, 5, 5},
+                {3, 4, 4, 5, 5, 5}
+            };
+
+            return partyCountTable[questNumber - 1, playerCount - MIN_PLAYERS];
         }
     }
 }
