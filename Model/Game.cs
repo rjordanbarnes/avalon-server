@@ -8,27 +8,37 @@ namespace Avalon.Server.Model
     {
         private static readonly int MIN_PLAYERS = 5;
         private static readonly int MAX_PLAYERS = 10;
+        private static readonly int MAX_REJECTIONS = 5;
         private Random random = new Random();
 
-        public string gameId { get; }                       // Identifier for this game
+        public string gameId { get; }                               // Identifier for this game
 
         // Player trackers.
-        public List<Player> players { get; }                // Contains all players, including the host
-        public Player host { get; private set; }            // Current host. Must be contained in players
-        public Player leader { get; private set; }          // Current leader. Must be contained in players
-        public List<Player> questParty { get; }             // Players in the current quest party.
+        public List<Player> players { get; }                        // Players in clockwise order, including the host
+        public Player host { get; private set; }                    // Current host. Must be contained in players
+        public Player leader { get; private set; }                  // Current leader. Must be contained in players
+        public List<Player> questParty { get; }                     // Players in the current quest party.
+        public Dictionary<Player, bool> questVotes { get; }         // Tracks quest party approvals and quest successes, depending on game phase.
 
         // Round trackers.
-        public List<Team> questResults { get; }             // Which team has won each quest
-        public int gameRound { get; private set; }          // Current quest
-        public GamePhase gamePhase { get; private set; }    // Current game phase
+        public List<Team> questResults { get; }                     // Which team has won each quest
+        public int gameRound { get; private set; }                  // Current quest
+        public GamePhase gamePhase { get; private set; }            // Current game phase
+        public int numQuestRejections { get; private set; }         // Number of times the quest selection has been rejected for the current round
 
         public Game(Player host)
         {
             this.gameId = "TEST";
-            this.host = host;
+            this.players = new List<Player>();
             this.players.Add(host);
+            this.host = host;
+            this.leader = null;
+            this.questParty = new List<Player>();
+            this.questVotes = new Dictionary<Player, bool>();
+            this.questResults = new List<Team>();
+            this.gameRound = 1;
             this.gamePhase = GamePhase.Lobby;
+            this.numQuestRejections = 0;
         }
 
         public void AddPlayer(string connectionId, string username)
@@ -117,6 +127,7 @@ namespace Avalon.Server.Model
 
             this.gameRound = 1;
             this.gamePhase = GamePhase.PartySelection;
+            this.numQuestRejections = 0;
         }
 
         public void ToggleParty(string username)
@@ -160,6 +171,73 @@ namespace Avalon.Server.Model
             }
 
             this.gamePhase = GamePhase.PartyVote;
+        }
+
+        public void ApproveParty(string connectionId, bool approve)
+        {
+            Player player = players.Find(player => player.connectionId.Equals(connectionId));
+
+            if (player == null)
+            {
+                // Connection not in the game.
+                return;
+            }
+
+            if (!gamePhase.Equals(GamePhase.PartyVote))
+            {
+                // Not in party vote phase.
+                return;
+            }
+
+            questVotes[player] = approve;
+
+            if (questVotes.Count == players.Count)
+            {
+                // All of the votes are in.
+                int numApprove = 0;
+
+                foreach (bool vote in questVotes.Values)
+                {
+                    if (vote)
+                    {
+                        numApprove++;
+                    }
+                }
+
+                if (numApprove > this.players.Count / 2.0)
+                {
+                    // Approved!
+                    this.gamePhase = GamePhase.Quest;
+                    this.questVotes.Clear();
+                    this.numQuestRejections = 0;
+                }
+                else
+                {
+                    // Rejected!
+                    this.numQuestRejections++;
+
+                    if (this.numQuestRejections >= MAX_REJECTIONS)
+                    {
+                        // TODO: Too many rejections, evil win!
+                        return;
+                    }
+
+                    // Find next leader.
+                    for (int i = 0; i < this.players.Count; i++)
+                    {
+                        if (this.leader.Equals(this.players[i]))
+                        {
+                            this.leader = this.players[i + 1 % this.players.Count];
+                            break;
+                        }
+                    }
+
+                    // Reset for a new team building phase
+                    questParty.Clear();
+                    questVotes.Clear();
+                    gamePhase = GamePhase.PartySelection;
+                }
+            }
         }
 
         public bool ContainsPlayer(string connectionId)

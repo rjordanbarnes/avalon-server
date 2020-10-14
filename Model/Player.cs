@@ -11,5 +11,22 @@ namespace Avalon.Server.Model
             this.connectionId = connectionId;
             this.name = name;
         }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null || GetType() != obj.GetType())
+            {
+                return false;
+            }
+
+            Player other = (Player)obj;
+
+            return other.connectionId == this.connectionId;
+        }
+
+        public override int GetHashCode()
+        {
+            return connectionId.GetHashCode();
+        }
     }
 }
