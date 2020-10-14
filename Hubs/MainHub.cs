@@ -68,6 +68,12 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
             game.RemovePlayer(Context.ConnectionId);
 
             if (!game.ContainsPlayer(Context.ConnectionId))
@@ -85,6 +91,12 @@ namespace Avalon.Server.Hubs
             if (game == null)
             {
                 // No such game
+                return;
+            }
+
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
                 return;
             }
 
@@ -108,6 +120,12 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
             if (!game.leader.connectionId.Equals(Context.ConnectionId))
             {
                 // Not the leader
@@ -128,6 +146,12 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
             if (!game.leader.connectionId.Equals(Context.ConnectionId))
             {
                 // Not the leader
@@ -135,6 +159,26 @@ namespace Avalon.Server.Hubs
             }
 
             game.ConfirmParty();
+        }
+
+        // Approves the current party.
+        public async Task ApproveParty(string gameId, bool approve)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
+            game.ApproveParty(Context.ConnectionId, approve);
         }
     }
 }
