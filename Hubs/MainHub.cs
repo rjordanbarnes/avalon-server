@@ -161,7 +161,7 @@ namespace Avalon.Server.Hubs
             game.ConfirmParty();
         }
 
-        // Approves the current party.
+        // Approves or disapproves of the current party.
         public async Task ApproveParty(string gameId, bool approve)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
@@ -179,6 +179,26 @@ namespace Avalon.Server.Hubs
             }
 
             game.ApproveParty(Context.ConnectionId, approve);
+        }
+
+        // Votes to succeed or fail the quest.
+        public async Task SucceedQuest(string gameId, bool success)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
+            game.SucceedQuest(Context.ConnectionId, success);
         }
     }
 }

@@ -240,6 +240,37 @@ namespace Avalon.Server.Model
             }
         }
 
+        public void SucceedQuest(string connectionId, bool success)
+        {
+            Player player = players.Find(player => player.connectionId.Equals(connectionId));
+
+            if (player == null)
+            {
+                // Connection not in the game.
+                return;
+            }
+
+            if (!gamePhase.Equals(GamePhase.PartyVote))
+            {
+                // Not in party vote phase.
+                return;
+            }
+
+            if (!questParty.Contains(player))
+            {
+                // Player isn't in quest party.
+                return;
+            }
+
+            questVotes[player] = success;
+
+            if (questVotes.Count == questParty.Count)
+            {
+                // All votes are in.
+                gamePhase = GamePhase.QuestResults;
+            }
+        }
+
         public bool ContainsPlayer(string connectionId)
         {
             return this.players.Find(player => player.connectionId.Equals(connectionId)) != null;
