@@ -6,7 +6,7 @@ namespace Avalon.Server.Model
         MinionOfMordred
     }
 
-    public enum Team
+    public enum Loyalty
     {
         Good,
         Evil
@@ -14,14 +14,14 @@ namespace Avalon.Server.Model
 
     static class RoleMethods
     {
-        public static Team GetTeam(this Role role)
+        public static Loyalty GetTeam(this Role role)
         {
             switch (role)
             {
                 case Role.ServantOfArthur:
-                    return Team.Good;
+                    return Loyalty.Good;
                 case Role.MinionOfMordred:
-                    return Team.Evil;
+                    return Loyalty.Evil;
             }
 
             throw new System.ArgumentException("Unknown role");
