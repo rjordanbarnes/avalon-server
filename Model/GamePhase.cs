@@ -3,8 +3,8 @@ namespace Avalon.Server.Model
     public enum GamePhase
     {
         Lobby,
-        PartySelection,
-        PartyVote,
+        TeamBuilding,
+        TeamVote,
         Quest,
         QuestResults
     }

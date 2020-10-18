@@ -23,11 +23,6 @@ namespace Avalon.Server.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SendMessage(string user, string message)
-        {
-            await Clients.All.SendAsync("ReceiveMessage", user, message);
-        }
-
         // Creates a new game. The host will have the passed username.
         public async Task CreateGame(string username)
         {
@@ -109,8 +104,8 @@ namespace Avalon.Server.Hubs
             game.Start();
         }
 
-        // Toggles whether the passed Player is in the party. Player must be leader.
-        public async Task ToggleParty(string gameId, string username)
+        // Toggles whether the passed Player is in the team. Player must be leader.
+        public async Task ToggleTeam(string gameId, string username)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
 
@@ -132,11 +127,11 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
-            game.ToggleParty(username);
+            game.ToggleTeam(username);
         }
 
-        // Confirms the current party. Player must be leader.
-        public async Task ConfirmParty(string gameId)
+        // Confirms the current team. Player must be leader.
+        public async Task ConfirmTeam(string gameId)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
 
@@ -158,11 +153,11 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
-            game.ConfirmParty();
+            game.ConfirmTeam();
         }
 
-        // Approves or disapproves of the current party.
-        public async Task ApproveParty(string gameId, bool approve)
+        // Approves or disapproves of the current team.
+        public async Task ApproveTeam(string gameId, bool approve)
         {
             Game game = games.Find(game => game.gameId.Equals(gameId));
 
@@ -178,7 +173,7 @@ namespace Avalon.Server.Hubs
                 return;
             }
 
-            game.ApproveParty(Context.ConnectionId, approve);
+            game.ApproveTeam(Context.ConnectionId, approve);
         }
 
         // Votes to succeed or fail the quest.
@@ -199,6 +194,32 @@ namespace Avalon.Server.Hubs
             }
 
             game.SucceedQuest(Context.ConnectionId, success);
+        }
+
+        // Reveals one result of the quest. Player must be leader.
+        public async Task RevealQuestResult(string gameId)
+        {
+            Game game = games.Find(game => game.gameId.Equals(gameId));
+
+            if (game == null)
+            {
+                // No such game
+                return;
+            }
+
+            if (!game.ContainsPlayer(Context.ConnectionId))
+            {
+                // Not in the game
+                return;
+            }
+
+            if (!game.leader.connectionId.Equals(Context.ConnectionId))
+            {
+                // Not the leader
+                return;
+            }
+
+            game.RevealQuestResult();
         }
     }
 }
